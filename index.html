@@ -4,22 +4,84 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Golden Sushi – Mapa Operativo (Cali)</title>
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
   <style>
-    html, body, #map { height: 100%; margin: 0; }
+    /* ====== Mobile UX: panel colapsable tipo app ====== */
+    .fab{
+      position:absolute;
+      z-index:1200;
+      left:12px;
+      bottom:16px;
+      display:none;
+      background:#111827;
+      color:#fff;
+      border:0;
+      border-radius:999px;
+      padding:10px 14px;
+      font:600 14px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      box-shadow:0 12px 30px rgba(0,0,0,.25);
+      cursor:pointer;
+    }
+
+    .panel-close{
+      display:none;
+      border:0;
+      background:transparent;
+      font-size:22px;
+      line-height:1;
+      cursor:pointer;
+      padding:6px 8px;
+      border-radius:10px;
+    }
+
+    @media (max-width: 768px){
+      .fab{
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+      }
+
+      .panel{
+        width:calc(100% - 24px) !important;
+        max-width:520px;
+        left:12px !important;
+        right:12px !important;
+        top:12px !important;
+        max-height:60vh;
+        overflow-y:auto;
+      }
+
+      .panel.is-collapsed{
+        display:none;
+      }
+
+      .panel-close{
+        display:inline-flex;
+      }
+    }
+
+    html, body, #map{ height:100%; margin:0; }
+
     :root{
       --bg: rgba(255,255,255,.96);
-      --text: #111827;
+      --text:#111827;
       --muted: rgba(17,24,39,.65);
       --border: rgba(17,24,39,.10);
       --shadow: 0 12px 34px rgba(0,0,0,.14);
       --radius: 16px;
     }
+
     .panel{
-      position:absolute; z-index:999; top:12px; left:12px;
+      position:absolute;
+      z-index:999;
+      top:12px;
+      left:12px;
       background:var(--bg);
-      padding:12px; border-radius:var(--radius);
+      padding:12px;
+      border-radius:var(--radius);
       box-shadow:var(--shadow);
       width:300px;
       font:14px/1.25 system-ui,-apple-system,Segoe UI,Roboto,Arial;
@@ -27,34 +89,59 @@
       backdrop-filter: blur(6px);
       border:1px solid var(--border);
     }
-    .header{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+
+    .header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+    }
+
     .title{ font-weight:900; font-size:14px; margin:0; letter-spacing:.2px; }
     .sub{ font-size:12px; color:var(--muted); margin-top:3px; }
+
     .chip{
-      font-size:12px; padding:6px 10px; border-radius:999px;
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
       border:1px solid var(--border);
       background:rgba(17,24,39,.03);
-      cursor:pointer; user-select:none; font-weight:800;
+      cursor:pointer;
+      user-select:none;
+      font-weight:800;
+      white-space:nowrap;
     }
     .chip.active{ background:rgba(0,0,0,.08); }
+
     .sep{ height:1px; background:rgba(17,24,39,.08); margin:10px 0; }
     .section-title{ font-weight:900; font-size:12px; margin:2px 0 8px 0; }
     .row{ display:flex; gap:10px; align-items:center; margin:8px 0; }
     .toggle{ display:flex; align-items:center; gap:10px; }
-    .toggle input{ transform: scale(1.05); }
+    .toggle input{ transform:scale(1.05); }
+
     .btn{
-      cursor:pointer; border:1px solid rgba(17,24,39,.12); background:#fff; padding:8px 10px;
-      border-radius:12px; font-weight:900; color:var(--text);
+      cursor:pointer;
+      border:1px solid rgba(17,24,39,.12);
+      background:#fff;
+      padding:8px 10px;
+      border-radius:12px;
+      font-weight:900;
+      color:var(--text);
     }
     .btn:hover{ background:rgba(17,24,39,.04); }
+
     .btns{ display:flex; gap:10px; }
     .legend{ display:grid; grid-template-columns:1fr; gap:6px; }
     .legend-item{ display:flex; align-items:center; gap:8px; font-size:12px; color:rgba(17,24,39,.85); }
     .swatch{ width:12px; height:12px; border-radius:4px; border:1px solid rgba(0,0,0,.12); }
     .hint{ font-size:12px; color:var(--muted); }
     .pill{
-      display:inline-block; padding:2px 8px; border-radius:999px; background:rgba(17,24,39,.06);
-      font-size:12px; border:1px solid rgba(17,24,39,.10);
+      display:inline-block;
+      padding:2px 8px;
+      border-radius:999px;
+      background:rgba(17,24,39,.06);
+      font-size:12px;
+      border:1px solid rgba(17,24,39,.10);
     }
 
     body.presentation .panel .ops-only{ display:none; }
@@ -68,24 +155,34 @@
     .popup-body{ margin-top:10px; color:rgba(17,24,39,.92); }
     .popup-body div{ margin:4px 0; }
     .popup-action{
-      margin-top:10px; padding:10px; border-radius:12px;
-      border:1px solid rgba(17,24,39,.10); background:rgba(17,24,39,.03);
+      margin-top:10px;
+      padding:10px;
+      border-radius:12px;
+      border:1px solid rgba(17,24,39,.10);
+      background:rgba(17,24,39,.03);
       font-weight:900;
     }
   </style>
 </head>
+
 <body>
+  <!-- Botón flotante móvil -->
+  <button class="fab" id="btnFilters">⚙️ Filtros</button>
+
   <div id="map"></div>
 
-  <div class="panel" id="panel">
+  <!-- Panel -->
+  <div class="panel is-collapsed" id="panel">
     <div class="header">
       <div>
         <div class="title">Mapa Operativo</div>
         <div class="sub">Golden Sushi · Cali · 1 km² · Cobertura 1 km</div>
       </div>
-      <div style="display:flex; gap:8px;">
+
+      <div style="display:flex; gap:8px; align-items:flex-start;">
         <div class="chip active" id="modeOperativo">Operativo</div>
         <div class="chip" id="modePresentacion">Presentación</div>
+        <button class="panel-close" id="btnClose" aria-label="Cerrar">✕</button>
       </div>
     </div>
 
@@ -94,7 +191,7 @@
     <div class="section-title">Capas</div>
 
     <div class="toggle row ops-only">
-      <input type="checkbox" id="toggleBarrios"  disabled />
+      <input type="checkbox" id="toggleBarrios" />
       <label for="toggleBarrios">Barrios</label>
     </div>
 
@@ -155,326 +252,366 @@
     <div class="hint ops-only">Tip: activa “Cobertura (1 km)” + “Zonas sin cobertura” para ver huecos y evitar canibalización.</div>
   </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script>
-  const map = L.map('map', { zoomControl: false }).setView([3.44, -76.53], 12);
-  L.control.zoom({ position: 'bottomright' }).addTo(map);
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map);
+  <script>
+    const map = L.map('map', { zoomControl:false }).setView([3.44, -76.53], 12);
+    L.control.zoom({ position:'bottomright' }).addTo(map);
 
-  function zonaLabel(perfil){
-    const s = (perfil || '').toLowerCase();
-    if (s.includes('premium')) return 'Alta Rentabilidad';
-    if (s.includes('mixto')) return 'Zona de Optimización';
-    if (s.includes('volumen')) return 'Zona Sensible';
-    return 'Zona por Evaluar';
-  }
-  function colorForPerfil(perfil){
-    const s = (perfil || '').toLowerCase();
-    if (s.includes('premium')) return '#2ecc71';
-    if (s.includes('mixto')) return '#f1c40f';
-    if (s.includes('volumen')) return '#e74c3c';
-    return '#3498db';
-  }
-  function isOpenNow(props){
-    const open = (props.open || '').trim();
-    const close = (props.close || '').trim();
-    if (!open || !close) return true;
-    const [oh, om] = open.split(':').map(Number);
-    const [ch, cm] = close.split(':').map(Number);
-    if (!Number.isFinite(oh) || !Number.isFinite(om) || !Number.isFinite(ch) || !Number.isFinite(cm)) return true;
-    const now = new Date();
-    const t = now.getHours()*60 + now.getMinutes();
-    const o = oh*60 + om;
-    const c = ch*60 + cm;
-    if (c >= o) return (t >= o && t <= c);
-    return (t >= o || t <= c);
-  }
-  function priorityForCell(props){
-    const perfil = (props.perfil || 'Disponible');
-    const zona = zonaLabel(perfil);
-    const uncovered = !!props.uncovered;
-    const d = Number(props.min_dist_m || 999999);
-    if (uncovered && zona === 'Alta Rentabilidad' && d <= 2500) return { level:'Alta', badge:'⭐', action:'Evaluar apertura de nueva cocina' };
-    if (uncovered && zona === 'Alta Rentabilidad') return { level:'Alta', badge:'⭐', action:'Evaluar apertura de nueva cocina' };
-    if (uncovered && zona === 'Zona de Optimización') return { level:'Media', badge:'◼', action:'Optimizar operación o reforzar cobertura' };
-    if (uncovered && zona === 'Zona Sensible') return { level:'Baja', badge:'◻', action:'No priorizar en esta etapa' };
-    if (zona === 'Alta Rentabilidad') return { level:'Media', badge:'◼', action:'Replicar aprendizajes y defender zona' };
-    if (zona === 'Zona de Optimización') return { level:'Media', badge:'◼', action:'Optimizar horarios/promos y medir respuesta' };
-    if (zona === 'Zona Sensible') return { level:'Baja', badge:'◻', action:'Controlar costos y validar demanda' };
-    return { level:'Media', badge:'◼', action:'Recolectar datos para clasificar' };
-  }
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom:19,
+      attribution:'&copy; OpenStreetMap contributors'
+    }).addTo(map);
 
-  let barriosLayer = null;
-  let gridLayer = null;
-  let kitchensLayer = null;
-  let coverageLayer = null;
+    function zonaLabel(perfil){
+      const s = (perfil || '').toLowerCase();
+      if (s.includes('premium')) return 'Alta Rentabilidad';
+      if (s.includes('mixto')) return 'Zona de Optimización';
+      if (s.includes('volumen')) return 'Zona Sensible';
+      return 'Zona por Evaluar';
+    }
+    function colorForPerfil(perfil){
+      const s = (perfil || '').toLowerCase();
+      if (s.includes('premium')) return '#2ecc71';
+      if (s.includes('mixto')) return '#f1c40f';
+      if (s.includes('volumen')) return '#e74c3c';
+      return '#3498db';
+    }
+    function isOpenNow(props){
+      const open = (props.open || '').trim();
+      const close = (props.close || '').trim();
+      if (!open || !close) return true;
+      const [oh, om] = open.split(':').map(Number);
+      const [ch, cm] = close.split(':').map(Number);
+      if (!Number.isFinite(oh) || !Number.isFinite(om) || !Number.isFinite(ch) || !Number.isFinite(cm)) return true;
+      const now = new Date();
+      const t = now.getHours()*60 + now.getMinutes();
+      const o = oh*60 + om;
+      const c = ch*60 + cm;
+      if (c >= o) return (t >= o && t <= c);
+      return (t >= o || t <= c);
+    }
+    function priorityForCell(props){
+      const perfil = (props.perfil || 'Disponible');
+      const zona = zonaLabel(perfil);
+      const uncovered = !!props.uncovered;
+      const d = Number(props.min_dist_m || 999999);
+      if (uncovered && zona === 'Alta Rentabilidad' && d <= 2500) return { level:'Alta', badge:'⭐', action:'Evaluar apertura de nueva cocina' };
+      if (uncovered && zona === 'Alta Rentabilidad') return { level:'Alta', badge:'⭐', action:'Evaluar apertura de nueva cocina' };
+      if (uncovered && zona === 'Zona de Optimización') return { level:'Media', badge:'◼', action:'Optimizar operación o reforzar cobertura' };
+      if (uncovered && zona === 'Zona Sensible') return { level:'Baja', badge:'◻', action:'No priorizar en esta etapa' };
+      if (zona === 'Alta Rentabilidad') return { level:'Media', badge:'◼', action:'Replicar aprendizajes y defender zona' };
+      if (zona === 'Zona de Optimización') return { level:'Media', badge:'◼', action:'Optimizar horarios/promos y medir respuesta' };
+      if (zona === 'Zona Sensible') return { level:'Baja', badge:'◻', action:'Controlar costos y validar demanda' };
+      return { level:'Media', badge:'◼', action:'Recolectar datos para clasificar' };
+    }
 
-  async function loadData(){
-    const grid = await fetch('data/cali_grid_1km_con_perfiles.geojson').then(r => r.json());
-    const kitchens = await fetch('data/golden_sushi_cocinas_con_perfiles.geojson').then(r => r.json());
-    let barrios = null;
-    try { barrios = await fetch('data/cali_barrios.geojson').then(r => r.json()); } catch (e) { barrios = null; }
+    let barriosLayer = null;
+    let gridLayer = null;
+    let kitchensLayer = null;
+    let coverageLayer = null;
 
-    if (barrios){
-      barriosLayer = L.geoJSON(barrios, {
-        style: () => ({ color:'#111', weight:1, opacity:0.30, fillOpacity:0.00 }),
+    async function loadData(){
+      const grid = await fetch('data/cali_grid_1km_con_perfiles.geojson').then(r => r.json());
+      const kitchens = await fetch('data/golden_sushi_cocinas_con_perfiles.geojson').then(r => r.json());
+
+      let barrios = null;
+      try { barrios = await fetch('data/cali_barrios.geojson').then(r => r.json()); } catch(e){ barrios = null; }
+
+      if (barrios){
+        barriosLayer = L.geoJSON(barrios, {
+          style: () => ({ color:'#111', weight:1, opacity:0.30, fillOpacity:0.00 }),
+          onEachFeature: (f, layer) => {
+            const p = f.properties || {};
+            const candidates = ['barrio','BARRIO','nombre','NOMBRE','nom_barrio','NOM_BARRIO'];
+            let name = null;
+            for (const k of candidates) if (p[k]) { name = p[k]; break; }
+            if (!name){
+              for (const k in p) if (typeof p[k] === 'string' && p[k].trim()) { name = p[k]; break; }
+            }
+            layer.bindTooltip(String(name || 'Barrio'), {sticky:true});
+          }
+        });
+        // No la agregamos por defecto: depende del toggle
+      }
+
+      gridLayer = L.geoJSON(grid, {
+        style: (f) => {
+          const p = f.properties || {};
+          const col = colorForPerfil(p.perfil);
+          const isOcc = (p.estado || '').toLowerCase().includes('ocup');
+          const showHoles = document.getElementById('toggleHoles')?.checked;
+          const holesOn = !!showHoles && !!p.uncovered && !document.body.classList.contains('presentation');
+          return {
+            color: holesOn ? '#111827' : '#2c3e50',
+            weight: holesOn ? 2 : 1,
+            opacity: holesOn ? 0.65 : 0.35,
+            dashArray: holesOn ? '6 6' : null,
+            fillColor: col,
+            fillOpacity: isOcc ? 0.20 : 0.08
+          };
+        },
         onEachFeature: (f, layer) => {
           const p = f.properties || {};
-          const candidates = ['barrio','BARRIO','nombre','NOMBRE','nom_barrio','NOM_BARRIO'];
-          let name = null;
-          for (const k of candidates) if (p[k]) { name = p[k]; break; }
-          if (!name){
-            for (const k in p) if (typeof p[k] === 'string' && p[k].trim()) { name = p[k]; break; }
-          }
-          layer.bindTooltip(String(name || 'Barrio'), {sticky:true});
-        }
-      });
-      barriosLayer.addTo(map);
-    }
+          const zona = zonaLabel(p.perfil);
+          const pr = priorityForCell(p);
+          const uncovered = !!p.uncovered;
 
-    gridLayer = L.geoJSON(grid, {
-      style: (f) => {
-        const p = f.properties || {};
-        const col = colorForPerfil(p.perfil);
-        const isOcc = (p.estado || '').toLowerCase().includes('ocup');
-        const showHoles = document.getElementById('toggleHoles')?.checked;
-        const holesOn = !!showHoles && !!p.uncovered && !document.body.classList.contains('presentation');
-        return {
-          color: holesOn ? '#111827' : '#2c3e50',
-          weight: holesOn ? 2 : 1,
-          opacity: holesOn ? 0.65 : 0.35,
-          dashArray: holesOn ? '6 6' : null,
-          fillColor: col,
-          fillOpacity: isOcc ? 0.20 : 0.08
-        };
-      },
-      onEachFeature: (f, layer) => {
-        const p = f.properties || {};
-        const zona = zonaLabel(p.perfil);
-        const pr = priorityForCell(p);
-        const uncovered = !!p.uncovered;
-
-        const htmlOperativo = `
-          <div class="popup-card">
-            <div class="popup-title">Celda ${p.cell_id || '—'}</div>
-            <div class="popup-sub">
-              <span class="pill">${p.estado || '—'}</span>
-              <span class="pill">${zona}</span>
-              ${uncovered ? '<span class="pill">Sin cobertura</span>' : '<span class="pill">Con cobertura</span>'}
-            </div>
-            <div class="popup-body">
-              <div><b>Prioridad:</b> ${pr.level} ${pr.badge}</div>
-              <div><b>Acción sugerida:</b></div>
-              <div class="popup-action">${pr.action}</div>
-              <div style="margin-top:8px; font-size:12px; color: rgba(17,24,39,.70);">
-                Distancia a cocina más cercana: ${Math.round(Number(p.min_dist_m || 0))} m
+          const htmlOperativo = `
+            <div class="popup-card">
+              <div class="popup-title">Celda ${p.cell_id || '—'}</div>
+              <div class="popup-sub">
+                <span class="pill">${p.estado || '—'}</span>
+                <span class="pill">${zona}</span>
+                ${uncovered ? '<span class="pill">Sin cobertura</span>' : '<span class="pill">Con cobertura</span>'}
+              </div>
+              <div class="popup-body">
+                <div><b>Prioridad:</b> ${pr.level} ${pr.badge}</div>
+                <div><b>Acción sugerida:</b></div>
+                <div class="popup-action">${pr.action}</div>
+                <div style="margin-top:8px; font-size:12px; color: rgba(17,24,39,.70);">
+                  Distancia a cocina más cercana: ${Math.round(Number(p.min_dist_m || 0))} m
+                </div>
               </div>
             </div>
-          </div>
-        `;
+          `;
 
-        const htmlPresentacion = `
-          <div class="popup-card">
-            <div class="popup-title">Celda ${p.cell_id || '—'}</div>
-            <div class="popup-sub">
-              <span class="pill">${zona}</span>
-              ${uncovered ? '<span class="pill">Sin cobertura</span>' : '<span class="pill">Con cobertura</span>'}
+          const htmlPresentacion = `
+            <div class="popup-card">
+              <div class="popup-title">Celda ${p.cell_id || '—'}</div>
+              <div class="popup-sub">
+                <span class="pill">${zona}</span>
+                ${uncovered ? '<span class="pill">Sin cobertura</span>' : '<span class="pill">Con cobertura</span>'}
+              </div>
             </div>
-          </div>
-        `;
+          `;
 
-        layer.on('click', () => {
-          const isPres = document.body.classList.contains('presentation');
-          layer.bindPopup(isPres ? htmlPresentacion : htmlOperativo).openPopup();
+          layer.on('click', () => {
+            const isPres = document.body.classList.contains('presentation');
+            layer.bindPopup(isPres ? htmlPresentacion : htmlOperativo).openPopup();
+          });
+
+          layer.bindTooltip(p.cell_id || '', {sticky:true, direction:'top'});
+        }
+      }).addTo(map);
+
+      kitchensLayer = L.geoJSON(kitchens, {
+        pointToLayer: (f, latlng) => {
+          const p = f.properties || {};
+          const col = colorForPerfil(p.perfil);
+          return L.circleMarker(latlng, { radius:7, weight:2, color:col, fillColor:col, fillOpacity:0.95 });
+        },
+        onEachFeature: (f, layer) => {
+          const p = f.properties || {};
+          const zona = zonaLabel(p.perfil);
+
+          const htmlOperativo = `
+            <div class="popup-card">
+              <div class="popup-title">${p.name || 'Cocina'}</div>
+              <div class="popup-sub">
+                <span class="pill">${p.status || '—'}</span>
+                <span class="pill">${zona}</span>
+                <span class="pill">Cobertura 1 km</span>
+              </div>
+              <div class="popup-body">
+                <div><b>Dirección:</b> ${p.address || '—'}</div>
+                <div><b>Barrio:</b> ${p.barrio || '—'}</div>
+                <div><b>Comuna:</b> ${p.comuna || '—'}</div>
+                <div><b>Horario:</b> ${(p.days || '—')} · ${(p.open || '—')}–${(p.close || '—')}</div>
+              </div>
+            </div>
+          `;
+
+          const htmlPresentacion = `
+            <div class="popup-card">
+              <div class="popup-title">${p.name || 'Cocina'}</div>
+              <div class="popup-sub">
+                <span class="pill">${zona}</span>
+                <span class="pill">Cobertura 1 km</span>
+              </div>
+              <div class="popup-body">
+                <div><b>Barrio:</b> ${p.barrio || '—'}</div>
+              </div>
+            </div>
+          `;
+
+          layer.on('click', () => {
+            const isPres = document.body.classList.contains('presentation');
+            layer.bindPopup(isPres ? htmlPresentacion : htmlOperativo).openPopup();
+          });
+        }
+      }).addTo(map);
+
+      coverageLayer = L.layerGroup();
+
+      function rebuildCoverage(){
+        coverageLayer.clearLayers();
+        kitchensLayer.eachLayer((marker) => {
+          const visible = (marker.options.opacity || 0) > 0;
+          if (!visible) return;
+          const f = marker.feature;
+          const p = f?.properties || {};
+          const g = f?.geometry || {};
+          if (!g || g.type !== 'Point') return;
+          const [lng, lat] = g.coordinates;
+          const col = colorForPerfil(p.perfil);
+          const c = L.circle([lat, lng], {
+            radius:1000,
+            color:col,
+            weight:1,
+            opacity:0.35,
+            fillColor:col,
+            fillOpacity:0.08
+          });
+          coverageLayer.addLayer(c);
+        });
+      }
+
+      const group = L.featureGroup([gridLayer, kitchensLayer]);
+      map.fitBounds(group.getBounds().pad(0.05));
+
+      function okByPerfil(perfil){
+        if (document.body.classList.contains('presentation')) return true;
+        const s = (perfil || 'Disponible').toLowerCase();
+        if (s.includes('premium')) return document.getElementById('fPremium').checked;
+        if (s.includes('mixto')) return document.getElementById('fMixto').checked;
+        if (s.includes('volumen')) return document.getElementById('fVolumen').checked;
+        return document.getElementById('fDisponible').checked;
+      }
+
+      function applyFilters(){
+        const showBarrios = document.getElementById('toggleBarrios')?.checked;
+        const showGrid = document.getElementById('toggleGrid').checked;
+        const showK = document.getElementById('toggleKitchens').checked;
+        const showCov = document.getElementById('toggleCoverage').checked;
+        const showHoles = document.getElementById('toggleHoles')?.checked;
+        const openNow = document.getElementById('fOpenNow')?.checked;
+
+        if (barriosLayer){
+          if (showBarrios && !map.hasLayer(barriosLayer)) barriosLayer.addTo(map);
+          if (!showBarrios && map.hasLayer(barriosLayer)) map.removeLayer(barriosLayer);
+        }
+
+        gridLayer.setStyle((f) => {
+          const p = f.properties || {};
+          const col = colorForPerfil(p.perfil);
+          const isOcc = (p.estado || '').toLowerCase().includes('ocup');
+          const holesOn = !!showHoles && !!p.uncovered && !document.body.classList.contains('presentation');
+          return {
+            color: holesOn ? '#111827' : '#2c3e50',
+            weight: holesOn ? 2 : 1,
+            opacity: holesOn ? 0.65 : 0.35,
+            dashArray: holesOn ? '6 6' : null,
+            fillColor: col,
+            fillOpacity: isOcc ? 0.20 : 0.08
+          };
         });
 
-        layer.bindTooltip(p.cell_id || '', {sticky:true, direction:'top'});
-      }
-    }).addTo(map);
-
-    kitchensLayer = L.geoJSON(kitchens, {
-      pointToLayer: (f, latlng) => {
-        const p = f.properties || {};
-        const col = colorForPerfil(p.perfil);
-        return L.circleMarker(latlng, { radius:7, weight:2, color:col, fillColor:col, fillOpacity:0.95 });
-      },
-      onEachFeature: (f, layer) => {
-        const p = f.properties || {};
-        const zona = zonaLabel(p.perfil);
-
-        const htmlOperativo = `
-          <div class="popup-card">
-            <div class="popup-title">${p.name || 'Cocina'}</div>
-            <div class="popup-sub">
-              <span class="pill">${p.status || '—'}</span>
-              <span class="pill">${zona}</span>
-              <span class="pill">Cobertura 1 km</span>
-            </div>
-            <div class="popup-body">
-              <div><b>Dirección:</b> ${p.address || '—'}</div>
-              <div><b>Barrio:</b> ${p.barrio || '—'}</div>
-              <div><b>Comuna:</b> ${p.comuna || '—'}</div>
-              <div><b>Horario:</b> ${(p.days || '—')} · ${(p.open || '—')}–${(p.close || '—')}</div>
-            </div>
-          </div>
-        `;
-
-        const htmlPresentacion = `
-          <div class="popup-card">
-            <div class="popup-title">${p.name || 'Cocina'}</div>
-            <div class="popup-sub">
-              <span class="pill">${zona}</span>
-              <span class="pill">Cobertura 1 km</span>
-            </div>
-            <div class="popup-body">
-              <div><b>Barrio:</b> ${p.barrio || '—'}</div>
-            </div>
-          </div>
-        `;
-
-        layer.on('click', () => {
-          const isPres = document.body.classList.contains('presentation');
-          layer.bindPopup(isPres ? htmlPresentacion : htmlOperativo).openPopup();
+        gridLayer.eachLayer((layer) => {
+          const p = layer.feature?.properties || {};
+          let ok = okByPerfil(p.perfil);
+          if (!showGrid) ok = false;
+          layer.setStyle(ok ? { opacity: layer.options.opacity, fillOpacity: layer.options.fillOpacity }
+                            : { opacity: 0.0, fillOpacity: 0.0 });
         });
-      }
-    }).addTo(map);
 
-    coverageLayer = L.layerGroup();
-
-    function rebuildCoverage(){
-      coverageLayer.clearLayers();
-      kitchensLayer.eachLayer((marker) => {
-        const visible = (marker.options.opacity || 0) > 0;
-        if (!visible) return;
-        const f = marker.feature;
-        const p = f?.properties || {};
-        const g = f?.geometry || {};
-        if (!g || g.type !== 'Point') return;
-        const [lng, lat] = g.coordinates;
-        const col = colorForPerfil(p.perfil);
-        const c = L.circle([lat, lng], {
-          radius: 1000,
-          color: col,
-          weight: 1,
-          opacity: 0.35,
-          fillColor: col,
-          fillOpacity: 0.08
+        kitchensLayer.eachLayer((layer) => {
+          const p = layer.feature?.properties || {};
+          let ok = okByPerfil(p.perfil);
+          if (openNow) ok = ok && isOpenNow(p);
+          if (!showK) ok = false;
+          layer.setStyle(ok ? {opacity:1.0, fillOpacity:0.95}
+                            : {opacity:0.0, fillOpacity:0.0});
         });
-        coverageLayer.addLayer(c);
-      });
-    }
 
-    const group = L.featureGroup([gridLayer, kitchensLayer]);
-    map.fitBounds(group.getBounds().pad(0.05));
-
-    function okByPerfil(perfil){
-      if (document.body.classList.contains('presentation')) return true;
-      const s = (perfil || 'Disponible').toLowerCase();
-      if (s.includes('premium')) return document.getElementById('fPremium').checked;
-      if (s.includes('mixto')) return document.getElementById('fMixto').checked;
-      if (s.includes('volumen')) return document.getElementById('fVolumen').checked;
-      return document.getElementById('fDisponible').checked;
-    }
-
-    function applyFilters(){
-      const showBarrios = document.getElementById('toggleBarrios')?.checked;
-      const showGrid = document.getElementById('toggleGrid').checked;
-      const showK = document.getElementById('toggleKitchens').checked;
-      const showCov = document.getElementById('toggleCoverage').checked;
-      const showHoles = document.getElementById('toggleHoles')?.checked;
-      const openNow = document.getElementById('fOpenNow')?.checked;
-
-      if (barriosLayer){
-        if (showBarrios && !map.hasLayer(barriosLayer)) barriosLayer.addTo(map);
-        if (!showBarrios && map.hasLayer(barriosLayer)) map.removeLayer(barriosLayer);
+        if (showCov){
+          rebuildCoverage();
+          coverageLayer.addTo(map);
+        } else {
+          if (map.hasLayer(coverageLayer)) map.removeLayer(coverageLayer);
+        }
       }
 
-      gridLayer.setStyle((f) => {
-        const p = f.properties || {};
-        const col = colorForPerfil(p.perfil);
-        const isOcc = (p.estado || '').toLowerCase().includes('ocup');
-        const holesOn = !!showHoles && !!p.uncovered && !document.body.classList.contains('presentation');
-        return {
-          color: holesOn ? '#111827' : '#2c3e50',
-          weight: holesOn ? 2 : 1,
-          opacity: holesOn ? 0.65 : 0.35,
-          dashArray: holesOn ? '6 6' : null,
-          fillColor: col,
-          fillOpacity: isOcc ? 0.20 : 0.08
-        };
-      });
-
-      gridLayer.eachLayer((layer) => {
-        const p = layer.feature?.properties || {};
-        let ok = okByPerfil(p.perfil);
-        if (!showGrid) ok = false;
-        layer.setStyle(ok ? { opacity: layer.options.opacity, fillOpacity: layer.options.fillOpacity } : { opacity: 0.0, fillOpacity: 0.0 });
-      });
-
-      kitchensLayer.eachLayer((layer) => {
-        const p = layer.feature?.properties || {};
-        let ok = okByPerfil(p.perfil);
-        if (openNow) ok = ok && isOpenNow(p);
-        if (!showK) ok = false;
-        layer.setStyle(ok ? {opacity:1.0, fillOpacity:0.95} : {opacity:0.0, fillOpacity:0.0});
-      });
-
-      if (showCov){
-        rebuildCoverage();
-        coverageLayer.addTo(map);
-      } else {
-        if (map.hasLayer(coverageLayer)) map.removeLayer(coverageLayer);
+      function setMode(presentation){
+        document.body.classList.toggle('presentation', presentation);
+        document.getElementById('modeOperativo').classList.toggle('active', !presentation);
+        document.getElementById('modePresentacion').classList.toggle('active', presentation);
+        if (presentation){
+          const holes = document.getElementById('toggleHoles');
+          if (holes) holes.checked = false;
+        }
+        applyFilters();
       }
-    }
 
-    function setMode(presentation){
-      document.body.classList.toggle('presentation', presentation);
-      document.getElementById('modeOperativo').classList.toggle('active', !presentation);
-      document.getElementById('modePresentacion').classList.toggle('active', presentation);
-      if (presentation){
-        const holes = document.getElementById('toggleHoles');
-        if (holes) holes.checked = false;
-      }
+      const ids = ['toggleBarrios','toggleGrid','toggleKitchens','toggleCoverage','toggleHoles','fPremium','fMixto','fVolumen','fDisponible','fOpenNow'];
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', applyFilters);
+      });
+
+      document.getElementById('fitBtn').addEventListener('click', () => {
+        const g = L.featureGroup([gridLayer, kitchensLayer]);
+        map.fitBounds(g.getBounds().pad(0.05));
+      });
+
+      const resetBtn = document.getElementById('resetBtn');
+      if (resetBtn) resetBtn.addEventListener('click', () => {
+        document.getElementById('toggleGrid').checked = true;
+        document.getElementById('toggleKitchens').checked = true;
+        document.getElementById('toggleCoverage').checked = false;
+        const holes = document.getElementById('toggleHoles'); if (holes) holes.checked = false;
+        const barrios = document.getElementById('toggleBarrios'); if (barrios) barrios.checked = false;
+        document.getElementById('fPremium').checked = true;
+        document.getElementById('fMixto').checked = true;
+        document.getElementById('fVolumen').checked = true;
+        document.getElementById('fDisponible').checked = true;
+        const openNow = document.getElementById('fOpenNow'); if (openNow) openNow.checked = false;
+        applyFilters();
+      });
+
+      document.getElementById('modeOperativo').addEventListener('click', () => setMode(false));
+      document.getElementById('modePresentacion').addEventListener('click', () => setMode(true));
+
+      setMode(false);
       applyFilters();
     }
 
-    const ids = ['toggleBarrios','toggleGrid','toggleKitchens','toggleCoverage','toggleHoles','fPremium','fMixto','fVolumen','fDisponible','fOpenNow'];
-    ids.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.addEventListener('change', applyFilters);
+    // ===== Mobile: abrir/cerrar panel =====
+    const panel = document.getElementById('panel');
+    const btnFilters = document.getElementById('btnFilters');
+    const btnClose = document.getElementById('btnClose');
+
+    function isMobile(){
+      return window.matchMedia('(max-width: 768px)').matches;
+    }
+    function openPanel(){ panel.classList.remove('is-collapsed'); }
+    function closePanel(){ panel.classList.add('is-collapsed'); }
+
+    if (btnFilters){
+      btnFilters.addEventListener('click', () => {
+        panel.classList.toggle('is-collapsed');
+      });
+    }
+    if (btnClose){
+      btnClose.addEventListener('click', closePanel);
+    }
+
+    // En celular: tocar el mapa cierra el panel (para que no estorbe)
+    map.on('click', () => {
+      if (isMobile()) closePanel();
     });
 
-    document.getElementById('fitBtn').addEventListener('click', () => {
-      const g = L.featureGroup([gridLayer, kitchensLayer]);
-      map.fitBounds(g.getBounds().pad(0.05));
+    // En PC: siempre visible
+    window.addEventListener('resize', () => {
+      if (!isMobile()) panel.classList.remove('is-collapsed');
     });
 
-    const resetBtn = document.getElementById('resetBtn');
-    if (resetBtn) resetBtn.addEventListener('click', () => {
-      document.getElementById('toggleGrid').checked = true;
-      document.getElementById('toggleKitchens').checked = true;
-      document.getElementById('toggleCoverage').checked = false;
-      const holes = document.getElementById('toggleHoles'); if (holes) holes.checked = false;
-      const barrios = document.getElementById('toggleBarrios'); if (barrios) barrios.checked = false;
-      document.getElementById('fPremium').checked = true;
-      document.getElementById('fMixto').checked = true;
-      document.getElementById('fVolumen').checked = true;
-      document.getElementById('fDisponible').checked = true;
-      const openNow = document.getElementById('fOpenNow'); if (openNow) openNow.checked = false;
-      applyFilters();
-    });
+    // Estado inicial correcto
+    if (!isMobile()) panel.classList.remove('is-collapsed');
 
-    document.getElementById('modeOperativo').addEventListener('click', () => setMode(false));
-    document.getElementById('modePresentacion').addEventListener('click', () => setMode(true));
-
-    setMode(false);
-  }
-
-  loadData();
-</script>
+    // Cargar data
+    loadData();
+  </script>
 </body>
 </html>
